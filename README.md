@@ -15,7 +15,7 @@
 
 > End-to-end pipeline of the proposed visual-acoustic sonification mapping framework.
 
-### 论文地址：https://arxiv.org/abs/2605.09846
+### arXiv Papers: https://arxiv.org/abs/2605.09846
 ## Abstract
 Existing visual-audio mapping schemes for new media art suffer from subjective mapping rules, expensive physical simulation and unsatisfactory real-time performance. To tackle these limitations, this paper proposes a real-time Chladni-pattern sonification framework oriented to interactive artistic creation.
 
