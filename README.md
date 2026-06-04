@@ -23,44 +23,41 @@ Guided by Kirchhoff-Love thin-plate vibration theory, paired Chladni image-frequ
 
 Experimental results demonstrate that the proposed method achieves 99.33% classification accuracy with 7.03 ms per-frame inference. The predicted frequencies are fully consistent with theoretical benchmarks with zero relative deviation, and the average full-link latency is less than 50 ms. This physically interpretable sonification system completely meets the real-time interactive requirements of new media art practice.
 
-# 规范可正常渲染的目录结构（Markdown标准树形，直接全选替换，Github/本地README无乱码）
-```markdown
+
 # Directory Structure
-```
 my_chladni_project/
 ├── data/
-│   ├── raw/                     # Raw generation scripts (clean_data.py, noise.py...)
-│   │   ├── clean_data.py
-│   │   ├── noise.py
-│   │   ├── random_color.py
-│   │   └── random_matrix.py
-│   ├── generated/               # Auto-generated raw images & labels (not split yet)
-│   │   ├── images/
-│   │   │   ├── clean/
-│   │   │   ├── noise/
-│   │   │   ├── random_color/
-│   │   │   └── random_matrix/
-│   │   └── labels/
-│   │       ├── clean_labels.json
-│   │       ├── noise_label.json
-│   │       ├── random_label.json
-│   │       └── merged_all_labels.json
-│   └── processed/               # Final split dataset for model training
-│       ├── images/
-│       │   ├── train/
-│       │   ├── val/
-│       │   └── test_synthetic/
-│       └── labels/
-│           ├── train.json
-│           ├── val.json
-│           └── test_synthetic.json
+│ ├── raw/ # Raw generation scripts for pattern simulation & data augmentation
+│ │ ├── clean_data.py
+│ │ ├── noise.py
+│ │ ├── random_color.py
+│ │ └── random_matrix.py
+│ ├── generated/ # Raw generated images+labels before train/val/test split
+│ │ ├── images/
+│ │ │ ├── clean/
+│ │ │ ├── noise/
+│ │ │ ├── random_color/
+│ │ │ └── random_matrix/
+│ │ └── labels/
+│ │ ├── clean_labels.json
+│ │ ├── noise_label.json
+│ │ ├── random_label.json
+│ │ └── merged_all_labels.json
+│ └── processed/ # Standard split dataset for formal model training
+│ ├── images/
+│ │ ├── train/
+│ │ ├── val/
+│ │ └── test_synthetic/
+│ └── labels/
+│ ├── train.json
+│ ├── val.json
+│ └── test_synthetic.json
 ├── scripts/
-│   └── split_dataset.py         # Dataset partitioning script
-├── model/                       # Model definition, training & evaluation codes
-│   ├── dataset.py        # Custom PyTorch Dataset class
-│   ├── network.py        # Neural network architecture definition
-│   ├── train.py          # Model training pipeline
-│   ├── evaluate.py       # Model evaluation & metrics calculation
-│   └── utils.py          # Common helper functions
+│ └── split_dataset.py # Script for automatic dataset partition
+├── model/ # Core CNN model codes(CBAM(SP5)_CNN_3×3 & baselines)
+│ ├── dataset.py # Custom PyTorch Dataset loading class
+│ ├── network.py # Definition of CNN & optimized CBAM architecture
+│ ├── train.py # End-to-end model training pipeline
+│ ├── evaluate.py # Model accuracy & latency evaluation
+│ └── utils.py # General reusable helper functions
 └── README.md
-```
