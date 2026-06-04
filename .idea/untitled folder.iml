@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="CPP_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <content url="file://$MODULE_DIR$">
+      <excludeFolder url="file://$MODULE_DIR$/kladni_cbam 3.0/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/kladni_cbam 7x7/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/kladni_model_alex/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/kladni_model_classification 3.0/.venv" />
+      <excludeFolder url="file://$MODULE_DIR$/kladni_model_vgg 3.0/.venv" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+</module>
