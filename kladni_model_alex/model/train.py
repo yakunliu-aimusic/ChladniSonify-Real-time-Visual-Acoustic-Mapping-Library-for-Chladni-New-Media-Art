@@ -168,7 +168,7 @@ def main():
     epoch_times.append(epoch_duration)
     print(f"Epoch {epoch+1} Duration: {timedelta(seconds=int(epoch_duration))}")
     print(f"\nOK Training finished completely!")
-    # Compute total training time和平均EpochDuration
+    # Compute total training time and average epoch duration
     total_train_end = time.time()
     total_duration = total_train_end - total_train_start
     print(f"Total training time: {timedelta(seconds=int(total_duration))}")

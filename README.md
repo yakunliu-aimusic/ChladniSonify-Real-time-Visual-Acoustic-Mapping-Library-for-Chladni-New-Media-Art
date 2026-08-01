@@ -1,8 +1,10 @@
 # ChladniSonify: Real-Time Visual-Acoustic Mapping Library for Chladni New Media Art
 
+## Description
+
 ChladniSonify is the dataset, model-training, and Python algorithm repository for the paper **"ChladniSonify: A Visual-Acoustic Mapping Method for Chladni Patterns in New Media Art Creation"**. It supports reproducible Chladni pattern generation, augmentation, model training, model comparison, and inference evaluation for physically grounded visual-acoustic mapping.
 
-## Scope and Paper Alignment
+## Project Scope and Paper Alignment
 
 The paper describes a full system with three layers:
 
@@ -28,7 +30,9 @@ The JUCE/VST3 plugin, shared-memory video transfer, UDP return pipeline, real-ti
 - DOI: [10.5281/zenodo.21730609](https://doi.org/10.5281/zenodo.21730609)
 - arXiv paper: [https://arxiv.org/abs/2605.09846](https://arxiv.org/abs/2605.09846)
 
-## Visual Overview
+## Dataset Information
+
+### Visual Overview
 
 ### Generated Chladni Pattern Samples
 
@@ -44,7 +48,7 @@ The JUCE/VST3 plugin, shared-memory video transfer, UDP return pipeline, real-ti
 
 The workflow figure refers to the full paper system. The complete JUCE/VST3 implementation is maintained in the companion plugin repository.
 
-## Method Summary
+## Methodology
 
 ### Physical Modeling and Dataset Construction
 
@@ -151,6 +155,10 @@ The paper uses single-image inference latency to verify real-time deployability.
 
 The full-link latency reported in the paper includes camera/video acquisition, shared-memory transfer, Python inference, UDP return, JUCE parsing, and audio rendering. That benchmark belongs to the companion JUCE/VST3 repository and is not fully reproduced by this Python-only repository.
 
+## Code Information
+
+The codebase is organized as a set of parallel experiment modules. Each module generally contains data-generation scripts, generated labels, processed dataset folders, model definitions, training scripts, evaluation scripts, and dataset-splitting utilities. The `kladni_cbam 5x5` folder is the primary implementation aligned with the paper's optimized CNN-CBAM configuration, while the other folders provide baseline and comparative experiments.
+
 ## Repository Structure
 
 ```text
@@ -173,7 +181,7 @@ The full-link latency reported in the paper includes camera/video acquisition, s
 
 Each experiment folder generally contains `data/raw`, `data/generated`, `data/processed`, `model`, and `scripts` subdirectories.
 
-## Environment Configuration
+## Requirements
 
 Recommended Python version: Python 3.9.
 
@@ -202,7 +210,7 @@ On Windows:
 .venv\Scripts\activate
 ```
 
-## Data Preparation and Running Guide
+## Usage Instructions
 
 The examples below use `kladni_cbam 5x5`, which is closest to the paper's optimized CNN-CBAM configuration. Replace the folder name to run another model variant.
 
@@ -289,7 +297,7 @@ The codebase is consistent with the paper's core algorithmic direction, but seve
 - `split_dataset.py` uses `0.8/0.1/0.1`; the paper summarizes an `8:2` train/test split.
 - The full JUCE/VST3 shared-memory and UDP audio-rendering pipeline is maintained in the companion repository.
 
-## Citation
+## Citations
 
 If you use this repository, dataset, or model artifacts, cite the paper and Zenodo archive.
 
@@ -304,6 +312,14 @@ If you use this repository, dataset, or model artifacts, cite the paper and Zeno
 }
 ```
 
-## License
+## License & Contribution Guidelines
 
 See `LICENSE` for the repository license. The Zenodo record states that the archived dataset package is released under Creative Commons Attribution 4.0 International.
+
+Contributions are welcome when they improve reproducibility, documentation quality, or experimental clarity. Recommended contribution rules:
+
+- keep all source-code comments, console messages, exceptions, and documentation text in English;
+- clearly document any change that affects dataset generation, model training, evaluation metrics, or reported performance;
+- avoid committing large generated artifacts unless they are required for reproducibility and are explicitly documented;
+- use issues or pull requests to discuss substantial methodological changes before merging;
+- cite the associated paper and Zenodo archive when reusing the dataset, code, or trained weights.

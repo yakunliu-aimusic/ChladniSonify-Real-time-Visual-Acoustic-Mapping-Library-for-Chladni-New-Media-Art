@@ -522,7 +522,7 @@ if __name__ == "__main__":
     with open(label_save_path, "w", encoding="utf-8") as f:
         json.dump(label_dict, f, indent=2, ensure_ascii=False)
     # Completion message
-    print(f"含CNN滤镜全色域Dataset generation complete!")
+    print(f"CNN-filter full-gamut dataset generation complete!")
     print(f"Save path:{os.path.abspath(SAVE_DIR)}")
     print(f"Dataset characteristics:")
     print(f"   - Total images:{total_imgs} images")

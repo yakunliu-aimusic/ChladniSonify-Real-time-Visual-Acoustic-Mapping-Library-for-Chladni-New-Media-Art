@@ -140,7 +140,7 @@ def generate_metal_bg(size, plate_color):
     Y = np.linspace(-1, 1, size)
     X_grid, Y_grid = np.meshgrid(X, Y)
 
-    # Metal reflection effect(适配任意板色)
+    # Metal reflection effect for arbitrary plate colors
     reflection = np.exp(-(X_grid ** 2 + Y_grid ** 2) / 0.8) * METAL_REFLECT_STRENGTH
     bg[:, :, 0] += reflection
     bg[:, :, 1] += reflection
@@ -380,7 +380,7 @@ if __name__ == "__main__":
     with open(label_save_path, "w", encoding="utf-8") as f:
         json.dump(label_dict, f, indent=2, ensure_ascii=False)
     # Generation statistics
-    print(f"全色域augDataset generation complete!")
+    print(f"Full-gamut augmentation dataset generation complete!")
     print(f"Save path:{os.path.abspath(SAVE_DIR)}")
     print(f"Key parameters:")
     print(f"   - Total images:{total_imgs} images")

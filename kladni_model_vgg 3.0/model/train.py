@@ -205,7 +205,7 @@ def main():
             torch.mps.empty_cache()
 
     print(f"\nOK Training finished!")
-    # Compute total training time和平均EpochDuration
+    # Compute total training time and average epoch duration
     total_train_end = time.time()
     total_duration = total_train_end - total_train_start
     print(f"Total training time: {timedelta(seconds=int(total_duration))}")
