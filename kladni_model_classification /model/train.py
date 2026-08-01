@@ -1,5 +1,5 @@
 # ======================
-# 基础库导入
+# Standard library imports
 # ======================
 import torch
 import torch.nn as nn
@@ -7,25 +7,25 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from pathlib import Path
-import matplotlib.pyplot as plt  # 👈 新增：用于绘图
+import matplotlib.pyplot as plt  # For plotting
 import time
 from datetime import timedelta
 # ======================
-# 同级导入
+# Local imports
 # ======================
 from dataset import ChladniDataset
 from network import BasicCNN
 
 # ======================
-# 可视化函数（新增）
+# Plotting utilities
 # ======================
 def plot_training_curves(train_losses, val_accuracies, save_path):
-    """绘制训练损失和验证准确率曲线"""
+    """Plot training loss and validation accuracy curves"""
     epochs = range(1, len(train_losses) + 1)
     
     fig, ax1 = plt.subplots(figsize=(10, 6))
     
-    # 左侧：训练损失
+    # Left axis: training loss
     color = 'tab:red'
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Train Loss', color=color)
@@ -33,7 +33,7 @@ def plot_training_curves(train_losses, val_accuracies, save_path):
     ax1.tick_params(axis='y', labelcolor=color)
     ax1.grid(True, linestyle='--', alpha=0.6)
 
-    # 右侧：验证准确率
+    # Right axis: validation accuracy
     ax2 = ax1.twinx()
     color = 'tab:blue'
     ax2.set_ylabel('Val Accuracy', color=color)
@@ -43,15 +43,15 @@ def plot_training_curves(train_losses, val_accuracies, save_path):
     plt.title('Training Progress: Loss and Accuracy')
     fig.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    plt.close()  # 避免内存泄漏
+    plt.close()  # Prevent memory leaks
 
 def main():
-    # ===== 配置 =====
+    # ===== Configuration =====
     PROJECT_ROOT = Path(__file__).parent.parent
     DATA_ROOT = PROJECT_ROOT / "data" / "processed"
     MODEL_SAVE_PATH = PROJECT_ROOT / "model" / "best_model.pth"
-    PLOT_SAVE_PATH = PROJECT_ROOT / "plots" / "training_curve.png"  # 👈 新增：绘图保存路径
-    (PROJECT_ROOT / "plots").mkdir(exist_ok=True)  # 自动创建 plots 文件夹
+    PLOT_SAVE_PATH = PROJECT_ROOT / "plots" / "training_curve.png"  # Plot save path
+    (PROJECT_ROOT / "plots").mkdir(exist_ok=True)  # Auto-create plots directory
 
     BATCH_SIZE = 32
     EPOCHS = 20
@@ -60,14 +60,14 @@ def main():
 
     print(f"Using device: {DEVICE}")
 
-    # ===== 数据预处理 =====
+    # ===== Data preprocessing =====
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    # ===== 加载数据 =====
+    # ===== Load data =====
     train_dataset = ChladniDataset(
         image_dir=DATA_ROOT / "images" / "train",
         label_path=DATA_ROOT / "labels" / "train.json",
@@ -82,7 +82,7 @@ def main():
     train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=0)
     val_loader = DataLoader(val_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
 
-    # ===== 模型 & 优化器 =====
+    # ===== Model and optimizer =====
     model = BasicCNN(num_classes=15).to(DEVICE)
     
     print("Model loaded successfully.")
@@ -93,24 +93,24 @@ def main():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=LR)
 
-    # ===== 手动测试数据集 =====
-    print("🔍 Testing dataset...")
+    # ===== Manual dataset smoke test =====
+    print("Testing dataset...")
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Val dataset size: {len(val_dataset)}")
     try:
         img, lbl = train_dataset[0]
-        print(f"✅ Sample loaded: image shape={img.shape}, label={lbl}")
+        print(f"OK Sample loaded: image shape={img.shape}, label={lbl}")
     except Exception as e:
-        print(f"❌ Dataset error: {e}")
+        print(f"ERROR: Dataset error: {e}")
         raise
 
-    # ===== 初始化记录列表（新增）=====
+    # ===== Initialize metric record lists =====
     train_losses = []
     val_accuracies = []
     epoch_times = []
     total_train_start = time.time()
 
-    # ===== 训练循环 =====
+    # ===== Training loop =====
     best_val_acc = 0.0
     for epoch in range(EPOCHS):
         epoch_start = time.time()
@@ -132,7 +132,7 @@ def main():
                 print(f"Batch {batch_idx+1}/{total_batches} | Current Loss: {loss.item():.4f}")
         
         avg_train_loss = train_loss / total_batches
-        train_losses.append(avg_train_loss)  # 👈 记录
+        train_losses.append(avg_train_loss)  # Record
 
         # Validation
         model.eval()
@@ -147,7 +147,7 @@ def main():
                 correct += (preds == labels).sum().item()
         
         val_acc = correct / total
-        val_accuracies.append(val_acc)  # 👈 记录
+        val_accuracies.append(val_acc)  # Record
 
         print(f"\nEpoch {epoch+1}/{EPOCHS} | "
               f"Train Loss: {avg_train_loss:.4f} | "
@@ -157,23 +157,23 @@ def main():
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(), MODEL_SAVE_PATH)
-            print(f"📌 New best model saved! Val Acc: {best_val_acc:.4f}")
+            print(f"New best model saved! Val Acc: {best_val_acc:.4f}")
 
-        # 👇 新增：每个 epoch 后更新可视化（可选：也可只在最后画）
+        # Update plot after each epoch (optional: or only at the end)
         epoch_end = time.time()
         epoch_duration = epoch_end - epoch_start
         epoch_times.append(epoch_duration)
-        print(f"⏱️ Epoch {epoch+1} 耗时: {timedelta(seconds=int(epoch_duration))}")
+        print(f"Epoch {epoch+1} Duration: {timedelta(seconds=int(epoch_duration))}")
         plot_training_curves(train_losses, val_accuracies, PLOT_SAVE_PATH)
 
-    print(f"\n✅ Training finished completely!")
-    print(f"🏆 Best Val Acc: {best_val_acc:.4f}")
+    print(f"\nOK Training finished completely!")
+    print(f"Best Val Acc: {best_val_acc:.4f}")
     total_train_end = time.time()
     total_duration = total_train_end - total_train_start
-    print(f"⏱️ 总训练时间: {timedelta(seconds=int(total_duration))}")
-    print(f"⏱️ 平均每个Epoch耗时: {timedelta(seconds=int(sum(epoch_times)/len(epoch_times)))}")
-    print(f"💾 Model saved to: {MODEL_SAVE_PATH}")
-    print(f"📊 Training curve saved to: {PLOT_SAVE_PATH}")
+    print(f"Total training time: {timedelta(seconds=int(total_duration))}")
+    print(f"Average per-epoch duration: {timedelta(seconds=int(sum(epoch_times)/len(epoch_times)))}")
+    print(f"Model saved to: {MODEL_SAVE_PATH}")
+    print(f"Training curve saved to: {PLOT_SAVE_PATH}")
 
 if __name__ == '__main__':
     main()

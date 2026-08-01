@@ -1,5 +1,5 @@
 import sys
-import time  # 新增：计时模块
+import time  # Timing module
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -11,7 +11,7 @@ import numpy as np
 from model.dataset import ChladniDataset
 from model.network import BasicCNN
 
-# ===== 配置 =====
+# ===== Configuration =====
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data" / "processed"
 MODEL_PATH = PROJECT_ROOT / "model" / "best_model.pth"
@@ -19,7 +19,7 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_CLASSES = 15
 BATCH_SIZE = 32
 
-# ===== 数据 =====
+# ===== Data =====
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -33,36 +33,36 @@ test_dataset = ChladniDataset(
 )
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-# ===== 加载模型 =====
+# ===== Load model =====
 model = BasicCNN(num_classes=NUM_CLASSES).to(DEVICE)
 model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device(DEVICE)))
 model.eval()
 
-# ===== 新增：测试纯模型推理速度（不含数据加载）=====
-print("⚡ 测试纯模型推理速度（不含数据加载）...")
-# 1. 构造单张测试图片（模拟224×224×3的输入）
+# ===== Pure model inference speed (excluding data loading) =====
+print("Pure model inference speed (excluding data loading)...")
+# 1. Build a single test image (224x224x3 input)
 test_img = torch.randn(1, 3, 224, 224).to(DEVICE)
 
-# 2. 预热模型（避免第一次推理慢，保证测速准确）
+# 2. Warm up model (avoid slow first inference)
 for _ in range(10):
     with torch.no_grad():
         _ = model(test_img)
 
-# 3. 正式测试（取100次平均，降低误差）
+# 3. Benchmark: 100 runs averaged to reduce error
 start_pure = time.time()
 for _ in range(100):
     with torch.no_grad():
         _ = model(test_img)
 end_pure = time.time()
 
-# 计算纯模型单张推理速度
-pure_infer_time = (end_pure - start_pure) / 100  # 单张耗时（秒）
-pure_throughput = 1 / pure_infer_time            # 吞吐量（张/秒）
-print(f"📊 纯模型推理速度：{pure_infer_time*1000:.2f} ms/张 | 吞吐量：{pure_throughput:.2f} 张/秒")
+# Compute pure model per-image inference speed
+pure_infer_time = (end_pure - start_pure) / 100  # Per-image time (seconds)
+pure_throughput = 1 / pure_infer_time            # Throughput (images/sec)
+print(f"Pure model inference speed:{pure_infer_time*1000:.2f} ms/image | Throughput: {pure_throughput:.2f} images/sec")
 
-# ===== 预测（含数据加载，计算整体推理速度）=====
+# ===== Prediction with data loading (overall inference speed) =====
 all_preds, all_labels = [], []
-start_total = time.time()  # 记录整体推理开始时间
+start_total = time.time()  # Record overall inference start time
 
 with torch.no_grad():
     for images, labels in test_loader:
@@ -72,34 +72,34 @@ with torch.no_grad():
         all_preds.extend(preds)
         all_labels.extend(labels.numpy())
 
-# 计算整体推理速度（含数据加载+模型推理）
+# Overall inference speed (including data loading)
 end_total = time.time()
 total_time = end_total - start_total
 total_samples = len(test_dataset)
-avg_total_time = total_time / total_samples  # 单张平均耗时（含加载）
-total_throughput = 1 / avg_total_time        # 整体吞吐量
+avg_total_time = total_time / total_samples  # Average per-image time (including loading)
+total_throughput = 1 / avg_total_time        # Overall throughput
 
-# 转换为numpy数组
+# Convert to NumPy arrays
 all_preds = np.array(all_preds)
 all_labels = np.array(all_labels)
 
-# ===== 计算核心指标 =====
+# ===== Compute core metrics =====
 acc = np.mean(all_preds == all_labels)
 macro_f1 = f1_score(all_labels, all_preds, average='macro')
 micro_f1 = f1_score(all_labels, all_preds, average='micro')
 
-# ===== 输出结果 =====
+# ===== Output results =====
 print("\n" + "="*60)
-print("📈 BasicCNN 测试集评估结果")
+print("BasicCNN test set evaluation results")
 print("="*60)
-# 推理速度输出
-print(f"⚡ 整体推理速度（含数据加载）：{avg_total_time*1000:.2f} ms/张 | 吞吐量：{total_throughput:.2f} 张/秒")
-# 准确率/F1-score输出
-print(f"🎯 Test Accuracy: {acc:.4f}")
-print(f"🏆 Macro-F1 Score (宏平均): {macro_f1:.4f}")
-print(f"🔍 Micro-F1 Score (微平均): {micro_f1:.4f}")
-# 分类报告
-print("\n📋 Classification Report (包含每类Precision/Recall/F1):")
+# Inference speed output
+print(f"Overall inference speed (with data loading):{avg_total_time*1000:.2f} ms/image | Throughput: {total_throughput:.2f} images/sec")
+# Accuracy/F1-scoreOutput
+print(f"Test Accuracy: {acc:.4f}")
+print(f"Macro-F1 Score (macro average): {macro_f1:.4f}")
+print(f"Micro-F1 Score (micro average): {micro_f1:.4f}")
+# Classification report
+print("\nClassification Report (per-class Precision/Recall/F1):")
 target_names = [f"Mode_{i}" for i in range(NUM_CLASSES)]
 print(classification_report(
     all_labels, 
@@ -108,7 +108,7 @@ print(classification_report(
     digits=4
 ))
 
-# 可选：输出混淆矩阵
+# Optional: uncomment to print confusion matrix
 # print("\n🌀 Confusion Matrix:")
 # cm = confusion_matrix(all_labels, all_preds)
 # print(cm)

@@ -8,23 +8,23 @@ from torchvision import transforms
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 import numpy as np
 import time
-import warnings  # 新增：用于屏蔽警告
+import warnings  # For suppressing warnings
 from model.dataset import ChladniDataset
 from model.network import VGG16Classifier
 
-# ===== 关键：屏蔽PyTorch的pretrained弃用警告 =====
+# ===== Suppress PyTorch pretrained deprecation warnings =====
 warnings.filterwarnings("ignore", category=UserWarning, module="torchvision")
 
-# ===== 配置 =====
+# ===== Configuration =====
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data" / "processed"
 MODEL_PATH = PROJECT_ROOT / "model" / "best_model.pth"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 NUM_CLASSES = 15
-BATCH_SIZE = 16  # 减小批次，提升CPU推理速度
+BATCH_SIZE = 16  # Smaller batch size for faster CPU inference
 NUM_WORKERS = 0
 
-# ===== 数据 =====
+# ===== Data =====
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -44,41 +44,41 @@ test_loader = DataLoader(
     pin_memory=False
 )
 
-# ===== 加载模型 =====
-# 改回pretrained=False，适配你的自定义VGG16Classifier类
+# ===== Load model =====
+# Use pretrained=False for custom VGG16Classifier
 model = VGG16Classifier(num_classes=NUM_CLASSES, pretrained=False).to(DEVICE)
 try:
     model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device(DEVICE)))
-    print(f"✅ VGG16模型权重加载成功：{MODEL_PATH}")
+    print(f"OK VGG16 model weights loaded successfully:{MODEL_PATH}")
 except FileNotFoundError:
-    print(f"❌ 权重文件不存在！请检查路径：{MODEL_PATH}")
+    print(f"ERROR: Weight file not found! Check path:{MODEL_PATH}")
     raise
 except RuntimeError as e:
-    print(f"❌ 权重文件与模型不匹配：{e}")
+    print(f"ERROR: Weight file incompatible with model:{e}")
     raise
 
 model.eval()
-print(f"🔧 使用设备：{DEVICE} | 测试集样本数：{len(test_dataset)}")
-print(f"⚡ 推理配置：批次大小={BATCH_SIZE} | 开始预测...")
+print(f"Device:{DEVICE} | Test set size:{len(test_dataset)}")
+print(f"Inference config: batch size={BATCH_SIZE} | Starting prediction...")
 
-# ===== 预测（带进度+计时）=====
+# ===== Prediction with progress and timing=====
 all_preds, all_labels = [], []
 start_time = time.time()
 
 with torch.no_grad():
-    # CPU多线程优化，提升VGG16推理速度
+    # CPU multi-threading optimization for VGG16 inference
     torch.set_num_threads(4)
     torch.set_num_interop_threads(2)
     
     for batch_idx, (images, labels) in enumerate(test_loader):
-        # 实时进度+预估剩余时间
+        # Live progress and ETA
         elapsed_time = time.time() - start_time
         progress = (batch_idx + 1) / len(test_loader)
         eta = elapsed_time / progress - elapsed_time if progress > 0 else 0
         
-        print(f"\r📊 预测进度：{batch_idx + 1}/{len(test_loader)} 批次 "
-              f"({progress*100:.1f}%) | 已耗时：{elapsed_time:.1f}s "
-              f"| 预估剩余：{eta:.1f}s", end="")
+        print(f"\rPrediction progress:{batch_idx + 1}/{len(test_loader)} batches "
+              f"({progress*100:.1f}%) | Elapsed:{elapsed_time:.1f}s "
+              f"| ETA:{eta:.1f}s", end="")
         
         images = images.to(DEVICE)
         outputs = model(images)
@@ -86,25 +86,25 @@ with torch.no_grad():
         all_preds.extend(preds)
         all_labels.extend(labels.numpy())
 
-# 结果处理
+# Process results
 all_preds = np.array(all_preds)
 all_labels = np.array(all_labels)
 total_time = time.time() - start_time
-print(f"\n✅ 预测完成！总耗时：{total_time:.1f}s | 平均每样本：{total_time/len(test_dataset):.3f}s")
+print(f"\nOK Prediction complete! Total time:{total_time:.1f}s | Average per sample:{total_time/len(test_dataset):.3f}s")
 
-# ===== 计算指标 =====
+# ===== Compute metrics =====
 acc = np.mean(all_preds == all_labels)
 macro_f1 = f1_score(all_labels, all_preds, average='macro')
 micro_f1 = f1_score(all_labels, all_preds, average='micro')
 
-# ===== 输出结果 =====
+# ===== Output results =====
 print("\n" + "="*60)
-print("📈 VGG16Classifier 测试集评估结果")
+print("VGG16Classifier test set evaluation results")
 print("="*60)
-print(f"🎯 Test Accuracy (测试准确率): {acc:.4f}")
-print(f"🏆 Macro-F1 Score (宏平均F1): {macro_f1:.4f}")
-print(f"🔍 Micro-F1 Score (微平均F1): {micro_f1:.4f}")
-print("\n📋 分类报告（每类Precision/Recall/F1）:")
+print(f"Test Accuracy: {acc:.4f}")
+print(f"Macro-F1 Score (macro average): {macro_f1:.4f}")
+print(f"Micro-F1 Score (micro average): {micro_f1:.4f}")
+print("\nClassification Report (per-class Precision/Recall/F1):")
 target_names = [f"Mode_{i}" for i in range(NUM_CLASSES)]
 print(classification_report(
     all_labels, 

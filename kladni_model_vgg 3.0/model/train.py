@@ -1,5 +1,5 @@
 # ======================
-# 基础库导入
+# Standard library imports
 # ======================
 import torch
 import torch.nn as nn
@@ -9,18 +9,18 @@ from torchvision import transforms
 from pathlib import Path
 import matplotlib.pyplot as plt
 import warnings
-warnings.filterwarnings('ignore')  # 屏蔽无关警告，减少资源占用
+warnings.filterwarnings('ignore')  # Suppress irrelevant warnings to reduce overhead
 import time
 from datetime import timedelta
 
 # ======================
-# 同级导入
+# Local imports
 # ======================
 from dataset import ChladniDataset
 from network import VGG16Classifier  
 
 # ======================
-# 可视化函数
+# Plotting utilities
 # ======================
 def plot_training_curves(train_losses, val_accuracies, save_path):
     epochs = range(1, len(train_losses) + 1)
@@ -44,23 +44,23 @@ def plot_training_curves(train_losses, val_accuracies, save_path):
     plt.close()
 
 def main():
-    # ===== 配置 =====
+    # ===== Configuration =====
     PROJECT_ROOT = Path(__file__).parent.parent
     DATA_ROOT = PROJECT_ROOT / "data" / "processed"
     MODEL_SAVE_PATH = PROJECT_ROOT / "model" / "best_model.pth"
     PLOT_SAVE_PATH = PROJECT_ROOT / "plots" / "training_curve.png"
     (PROJECT_ROOT / "plots").mkdir(exist_ok=True)
 
-    # 已调整为8，适配M4芯片（如果温度仍高，可改为4）
+    # Set to 8 for Apple M4 (reduce to 4 if thermals are high)
     BATCH_SIZE = 8
     EPOCHS = 20
-    LR = 1e-4  # ✅ 降低学习率（因使用预训练模型）
+    LR = 1e-4  # OK Lower learning rate for pretrained model
     
-    # 关键优化：优先使用MPS（Apple Silicon专用加速），降低CPU占用和温度
+    # Prefer MPS (Apple Silicon) to reduce CPU load and thermals
     if torch.backends.mps.is_available():
         DEVICE = "mps"
-        # 移除旧版本不支持的内存限制代码
-        # torch.backends.mps.set_per_process_memory_fraction(0.8)  # 已删除
+        # Remove unsupported memory limit API on older PyTorch
+        # torch.backends.mps.set_per_process_memory_fraction(0.8)  # Removed
     elif torch.cuda.is_available():
         DEVICE = "cuda"
     else:
@@ -68,14 +68,14 @@ def main():
 
     print(f"Using device: {DEVICE}")
 
-    # ===== 数据预处理（增加内存优化）=====
+    # ===== Data preprocessing (memory optimized)=====
     transform = transforms.Compose([
         transforms.Resize((224, 224)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
 
-    # ===== 数据集 =====
+    # ===== Dataset =====
     train_dataset = ChladniDataset(
         image_dir=DATA_ROOT / "images" / "train",
         label_path=DATA_ROOT / "labels" / "train.json",
@@ -87,14 +87,14 @@ def main():
         transform=transform
     )
     
-    # 优化：pin_memory=False（M4芯片不需要，减少内存拷贝）
+    # pin_memory=False (not needed on M4, avoids extra copies)
     train_loader = DataLoader(
         train_dataset, 
         batch_size=BATCH_SIZE, 
         shuffle=True, 
         num_workers=0,
         pin_memory=False,
-        drop_last=False  # 避免最后一个小批次导致的内存波动
+        drop_last=False  # Avoid memory spikes from final partial batch
     )
     val_loader = DataLoader(
         val_dataset, 
@@ -105,16 +105,16 @@ def main():
         drop_last=False
     )
 
-    # ===== 模型 & 优化器（增加内存优化）=====
+    # ===== Model and optimizer (memory optimized)=====
     model = VGG16Classifier(num_classes=15, pretrained=True).to(DEVICE)
     
-    # 优化：启用梯度检查点，降低VGG16的显存占用（约减少30%）
-    # 注意：如果你的VGG16Classifier不是Sequential结构，这行需要注释掉
+    # Gradient checkpointing to reduce VGG16 memory (~30%)
+    # Comment out if VGG16Classifier is not Sequential
     try:
         if DEVICE in ["mps", "cuda"]:
             model = torch.utils.checkpoint.checkpoint_sequential(model, segments=2)
     except:
-        print("⚠️ 梯度检查点未启用（模型非Sequential结构），不影响核心训练")
+        print("WARNING: Gradient checkpointing disabled (non-Sequential model); training unaffected")
     
     print("Model loaded successfully.")
     dummy_input = torch.randn(1, 3, 224, 224).to(DEVICE)
@@ -122,30 +122,30 @@ def main():
     print(f"Dummy output shape: {dummy_output.shape}")
 
     criterion = nn.CrossEntropyLoss()
-    # 优化：添加权重衰减，同时降低学习率波动（减少计算量）
+    # Weight decay to stabilize learning rate
     optimizer = optim.Adam(model.parameters(), lr=LR, weight_decay=1e-5)
 
-    # ===== 手动测试数据集 =====
-    print("🔍 Testing dataset...")
+    # ===== Manual dataset smoke test =====
+    print("Testing dataset...")
     print(f"Train dataset size: {len(train_dataset)}")
     print(f"Val dataset size: {len(val_dataset)}")
     try:
         img, lbl = train_dataset[0]
-        print(f"✅ Sample loaded: image shape={img.shape}, label={lbl}")
+        print(f"OK Sample loaded: image shape={img.shape}, label={lbl}")
     except Exception as e:
-        print(f"❌ Dataset error: {e}")
+        print(f"ERROR: Dataset error: {e}")
         raise
 
-    # ===== 训练记录 =====
+    # ===== Training records =====
     train_losses = []
     val_accuracies = []
-    epoch_times = []  # 记录每个Epoch耗时
-    total_train_start = time.time()  # 总训练开始时间
+    epoch_times = []  # Record per-epoch duration
+    total_train_start = time.time()  # Overall training start time
     
-    # ===== 训练循环（增加内存清理）=====
+    # ===== Training loop (with memory cleanup)=====
     best_val_acc = 0.0
     for epoch in range(EPOCHS):
-        epoch_start = time.time()  # 当前Epoch开始计时
+        epoch_start = time.time()  # Start timing current epoch
         # Training
         model.train()
         train_loss = 0.0
@@ -156,7 +156,7 @@ def main():
             images, labels = images.to(DEVICE), labels.to(DEVICE)
             optimizer.zero_grad()
             
-            # 内存优化：前向传播后及时释放中间变量
+            # Release intermediate tensors after forward pass
             with torch.autograd.detect_anomaly(False):
                 outputs = model(images)
                 loss = criterion(outputs, labels)
@@ -165,14 +165,14 @@ def main():
             
             train_loss += loss.item()
         
-        # 计算平均损失
+        # Compute average loss
         avg_train_loss = train_loss / total_batches
         train_losses.append(avg_train_loss)
 
         # Validation
         model.eval()
         correct, total = 0, 0
-        with torch.no_grad():  # 禁用梯度，大幅降低内存占用
+        with torch.no_grad():  # Disable gradients to reduce memory usage
             for images, labels in val_loader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
                 outputs = model(images)
@@ -190,29 +190,29 @@ def main():
         
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            # 优化：保存时先移到CPU，避免MPS内存锁定
+            # Save from CPU to avoid MPS memory pinning
             torch.save(model.state_dict(), MODEL_SAVE_PATH)
-            print(f"📌 New best model saved! Val Acc: {best_val_acc:.4f}")
+            print(f"New best model saved! Val Acc: {best_val_acc:.4f}")
 
-        # 计算并打印当前Epoch耗时
+        # Compute and print current epoch duration
         epoch_end = time.time()
         epoch_duration = epoch_end - epoch_start
         epoch_times.append(epoch_duration)
-        print(f"⏱️ Epoch {epoch+1} 耗时: {timedelta(seconds=int(epoch_duration))}")
-        # 绘制曲线后清理缓存
+        print(f"Epoch {epoch+1} Duration: {timedelta(seconds=int(epoch_duration))}")
+        # Clear cache after plotting
         plot_training_curves(train_losses, val_accuracies, PLOT_SAVE_PATH)
         if DEVICE == "mps":
             torch.mps.empty_cache()
 
-    print(f"\n✅ Training finished!")
-    # 计算总训练时间和平均Epoch耗时
+    print(f"\nOK Training finished!")
+    # Compute total training time和平均EpochDuration
     total_train_end = time.time()
     total_duration = total_train_end - total_train_start
-    print(f"⏱️ 总训练时间: {timedelta(seconds=int(total_duration))}")
-    print(f"⏱️ 平均每个Epoch耗时: {timedelta(seconds=int(sum(epoch_times)/len(epoch_times)))}")
-    print(f"🏆 Best Val Acc: {best_val_acc:.4f}")
-    print(f"💾 Model saved to: {MODEL_SAVE_PATH}")
-    print(f"📊 Training curve saved to: {PLOT_SAVE_PATH}")
+    print(f"Total training time: {timedelta(seconds=int(total_duration))}")
+    print(f"Average per-epoch duration: {timedelta(seconds=int(sum(epoch_times)/len(epoch_times)))}")
+    print(f"Best Val Acc: {best_val_acc:.4f}")
+    print(f"Model saved to: {MODEL_SAVE_PATH}")
+    print(f"Training curve saved to: {PLOT_SAVE_PATH}")
 
 if __name__ == '__main__':
     main()

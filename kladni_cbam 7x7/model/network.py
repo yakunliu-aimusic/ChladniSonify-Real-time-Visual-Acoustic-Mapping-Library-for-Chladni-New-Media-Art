@@ -5,25 +5,25 @@ from cbam import CBAM
 class BasicCNN_CBAM(nn.Module):
     def __init__(self, num_classes=15):
         super(BasicCNN_CBAM, self).__init__()
-        # 所有卷积层 kernel_size=5, padding=2
+        # All conv layers: kernel_size=5, padding=2
         self.features = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=5, padding=2),  # 5×5
+            nn.Conv2d(3, 32, kernel_size=5, padding=2),  # 5x5
             nn.ReLU(),
             nn.MaxPool2d(2),
 
-            nn.Conv2d(32, 64, kernel_size=5, padding=2), # 5×5
+            nn.Conv2d(32, 64, kernel_size=5, padding=2), # 5x5
             nn.ReLU(),
             nn.MaxPool2d(2),
 
-            nn.Conv2d(64, 128, kernel_size=5, padding=2),# 5×5
+            nn.Conv2d(64, 128, kernel_size=5, padding=2),# 5x5
             nn.ReLU(),
             nn.MaxPool2d(2),
         )
-        # 第4层也改为 5×5 卷积
+        # 4th layer also uses 5x5 convolution
         self.conv4 = nn.Conv2d(128, 256, kernel_size=5, padding=2)
         self.relu4 = nn.ReLU()
         
-        # ✅ CBAM 空间卷积核明确设置为 5×5（你论文的优化版本）
+        # OK CBAM spatial kernel explicitly set to 5x5 (paper-optimized version)
         self.cbam = CBAM(in_channels=256, reduction=16, kernel_size=5)
 
         self.adaptive_pool = nn.AdaptiveAvgPool2d((4, 4))

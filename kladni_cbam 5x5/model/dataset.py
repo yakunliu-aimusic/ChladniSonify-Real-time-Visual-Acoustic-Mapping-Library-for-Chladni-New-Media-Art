@@ -14,7 +14,7 @@ class ChladniDataset(Dataset):
         with open(label_path, "r") as f:
             self.labels_dict = json.load(f)
         
-        # 过滤掉不存在的图像（安全起见）
+        # Filter out missing images for safety
         self.filenames = []
         for fname in self.labels_dict.keys():
             if (self.image_dir / fname).exists():

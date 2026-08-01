@@ -4,12 +4,12 @@ import torch.nn as nn
 
 class AlexNet(nn.Module):
     """
-    适配小规模几何图案数据集的 AlexNet 变体：
-    - 输入支持 224x224
-    - 第一层卷积核改为 5x5（更适合小图）
-    - 加入 BatchNorm 提升稳定性
-    - 移除 LRN（已过时）
-    - 分类头输出 num_classes
+    AlexNet variant adapted for small-scale geometric pattern datasets:
+    - Input size 224x224
+    - First conv kernel 5x5 (better for small images)
+    - BatchNorm for training stability
+    - LRN removed (deprecated)
+    - Classifier head outputs num_classes
     """
     def __init__(self, num_classes=15):
         super(AlexNet, self).__init__()

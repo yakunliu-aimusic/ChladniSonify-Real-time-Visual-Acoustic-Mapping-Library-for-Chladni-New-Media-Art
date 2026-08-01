@@ -1,12 +1,12 @@
-'''目录结构
+'''Directory structure
 my_chladni_project/
 ├── data/
-│   ├── raw/                     ← 原始生成脚本（clean_data.py, noise.py...）
+│   ├── raw/                     # Raw generation scripts (clean_data.py, noise.py...)
 │   │   ├── clean_data.py
 │   │   ├── noise.py
 │   │   ├── random_color.py
 │   │   └── random_matrix.py
-│   ├── generated/               ← 自动生成的原始图像+标签（未划分）
+│   ├── generated/               # Auto-generated raw images and labels (not yet split)
 │   │   ├── images/
 │   │   │   ├── clean/
 │   │   │   ├── noise/
@@ -18,7 +18,7 @@ my_chladni_project/
 │   │       ├── noise_label.json
 │   │       ├── random_label.json
 │   │       └── merged_all_labels.json
-│   └── processed/               ← 划分后的最终数据集（供训练用）
+│   └── processed/               # Final split dataset for model training
 │       ├── images/
 │       │   ├── train/
 │       │   ├── val/
@@ -29,14 +29,14 @@ my_chladni_project/
 │           └── test_synthetic.json
 │
 ├── scripts/
-│   └── split_dataset.py         ← 数据划分脚本移至此处
+│   └── split_dataset.py         # Dataset partitioning script
 │
-├── model/                       ← 模型定义、训练、评估
-│    ├── dataset.py        ← 自定义 Dataset
-│    ├── network.py        ← 基础 CNN 模型（无 CBAM）
-│    ├── train.py          ← 训练脚本
-│    ├── evaluate.py       ← 评估脚本
-│    └── utils.py          ← 辅助函数（可选，但推荐）
+├── model/                       # Model definition, training, and evaluation
+│    ├── dataset.py        # Custom Dataset class
+│    ├── network.py        # Basic CNN model (without CBAM)
+│    ├── train.py          # Training script
+│    ├── evaluate.py       # Evaluation script
+│    └── utils.py          # Helper utilities (optional but recommended)
 │
 └── README.md
 '''

@@ -1,5 +1,5 @@
 import sys
-import time  # 新增：计时模块
+import time  # Timing module
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent))
 
@@ -9,17 +9,17 @@ from torchvision import transforms
 from sklearn.metrics import classification_report, confusion_matrix, f1_score
 import numpy as np
 from model.dataset import ChladniDataset
-from model.network import AlexNet  # 保持AlexNet模型导入不变
+from model.network import AlexNet  # Keep AlexNet model import unchanged
 
-# ===== 配置 =====
+# ===== Configuration =====
 PROJECT_ROOT = Path(__file__).parent.parent
 DATA_ROOT = PROJECT_ROOT / "data" / "processed"
 MODEL_PATH = PROJECT_ROOT / "model" / "best_model.pth"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-NUM_CLASSES = 15  # 统一类别数，方便维护
-BATCH_SIZE = 32   # 新增：批量大小配置，方便统一管理
+NUM_CLASSES = 15  # Unified class count
+BATCH_SIZE = 32   # Batch size configuration for centralized management
 
-# ===== 数据 =====
+# ===== Data =====
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -33,37 +33,37 @@ test_dataset = ChladniDataset(
 )
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
-# ===== 加载模型 =====
+# ===== Load model =====
 model = AlexNet(num_classes=NUM_CLASSES).to(DEVICE)
-# 优化模型加载逻辑，兼容CPU/GPU
+# Model loading compatible with CPU/GPU
 model.load_state_dict(torch.load(MODEL_PATH, map_location=torch.device(DEVICE)))
 model.eval()
 
-# ===== 测试纯模型推理速度（不含数据加载）=====
-print("⚡ 测试纯模型推理速度（不含数据加载）...")
-# 1. 构造单张测试图片（模拟224×224×3的输入，匹配AlexNet输入尺寸）
+# ===== Pure model inference speed (excluding data loading)=====
+print("Pure model inference speed (excluding data loading)...")
+# 1. Build a single test image (224x224x3, matching AlexNet input)
 test_img = torch.randn(1, 3, 224, 224).to(DEVICE)
 
-# 2. 预热模型（避免第一次推理慢，保证测速准确）
+# 2. Warm up model (avoid slow first inference)
 for _ in range(10):
     with torch.no_grad():
         _ = model(test_img)
 
-# 3. 正式测试（取100次平均，降低误差）
+# 3. Benchmark: 100 runs averaged to reduce error
 start_pure = time.time()
 for _ in range(100):
     with torch.no_grad():
         _ = model(test_img)
 end_pure = time.time()
 
-# 计算纯模型单张推理速度
-pure_infer_time = (end_pure - start_pure) / 100  # 单张耗时（秒）
-pure_throughput = 1 / pure_infer_time            # 吞吐量（张/秒）
-print(f"📊 纯模型推理速度：{pure_infer_time*1000:.2f} ms/张 | 吞吐量：{pure_throughput:.2f} 张/秒")
+# Compute pure model per-image inference speed
+pure_infer_time = (end_pure - start_pure) / 100  # Per-image time (seconds)
+pure_throughput = 1 / pure_infer_time            # Throughput (images/sec)
+print(f"Pure model inference speed:{pure_infer_time*1000:.2f} ms/image | Throughput: {pure_throughput:.2f} images/sec")
 
-# ===== 预测（含数据加载，计算整体推理速度）=====
+# ===== Prediction with data loading (overall inference speed) =====
 all_preds, all_labels = [], []
-start_total = time.time()  # 记录整体推理开始时间
+start_total = time.time()  # Record overall inference start time
 
 with torch.no_grad():
     for images, labels in test_loader:
@@ -73,47 +73,47 @@ with torch.no_grad():
         all_preds.extend(preds)
         all_labels.extend(labels.numpy())
 
-# 计算整体推理速度（含数据加载+模型推理）
+# Overall inference speed (including data loading)
 end_total = time.time()
 total_time = end_total - start_total
 total_samples = len(test_dataset)
-avg_total_time = total_time / total_samples  # 单张平均耗时（含加载）
-total_throughput = 1 / avg_total_time        # 整体吞吐量
+avg_total_time = total_time / total_samples  # Average per-image time (including loading)
+total_throughput = 1 / avg_total_time        # Overall throughput
 
-# 转换为numpy数组，适配sklearn指标计算
+# Convert to NumPy arrays for sklearn metrics
 all_preds = np.array(all_preds)
 all_labels = np.array(all_labels)
 
-# ===== 计算核心指标 =====
-# 1. 准确率
+# ===== Compute core metrics =====
+# 1. Accuracy
 acc = np.mean(all_preds == all_labels)
-# 2. 宏平均F1-score（多分类核心指标）
+# 2. Macro-averaged F1-score (primary multi-class metric)
 macro_f1 = f1_score(all_labels, all_preds, average='macro')
-# 3. 微平均F1-score（备用参考）
+# 3. Micro-averaged F1-score (reference)
 micro_f1 = f1_score(all_labels, all_preds, average='micro')
 
-# ===== 输出结果 =====
+# ===== Output results =====
 print("\n" + "="*60)
-print("📈 AlexNet 测试集评估结果")
+print("AlexNet test set evaluation results")
 print("="*60)
-# 推理速度输出
-print(f"⚡ 整体推理速度（含数据加载）：{avg_total_time*1000:.2f} ms/张 | 吞吐量：{total_throughput:.2f} 张/秒")
-# 准确率/F1-score输出
-print(f"🎯 Test Accuracy: {acc:.4f}")
-print(f"🏆 Macro-F1 Score (宏平均): {macro_f1:.4f}")
-print(f"🔍 Micro-F1 Score (微平均): {micro_f1:.4f}")
+# Inference speed output
+print(f"Overall inference speed (with data loading):{avg_total_time*1000:.2f} ms/image | Throughput: {total_throughput:.2f} images/sec")
+# Accuracy/F1-scoreOutput
+print(f"Test Accuracy: {acc:.4f}")
+print(f"Macro-F1 Score (macro average): {macro_f1:.4f}")
+print(f"Micro-F1 Score (micro average): {micro_f1:.4f}")
 
-# 分类报告
-print("\n📋 Classification Report (包含每类Precision/Recall/F1):")
+# Classification report
+print("\nClassification Report (per-class Precision/Recall/F1):")
 target_names = [f"Mode_{i}" for i in range(NUM_CLASSES)]
 print(classification_report(
     all_labels, 
     all_preds, 
     target_names=target_names,
-    digits=4  # 保留4位小数，便于论文制表
+    digits=4  # 4 decimal places for publication tables
 ))
 
-# 可选：输出混淆矩阵（如需分析AlexNet的类别误判情况，取消注释）
+# Optional: uncomment to print confusion matrix for AlexNet misclassification analysis
 # print("\n🌀 Confusion Matrix:")
 # cm = confusion_matrix(all_labels, all_preds)
 # print(cm)

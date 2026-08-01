@@ -4,7 +4,7 @@ import torch.nn as nn
 class BasicCNN(nn.Module):
     def __init__(self, num_classes=15):
         super(BasicCNN, self).__init__()
-        # 特征提取部分
+        # Feature extractor
         self.features = nn.Sequential(
             nn.Conv2d(3, 32, kernel_size=3, padding=1),
             nn.ReLU(),
@@ -22,7 +22,7 @@ class BasicCNN(nn.Module):
             nn.ReLU(),
             nn.AdaptiveAvgPool2d((4, 4))  # -> (256, 4, 4)
         )
-        # 分类头
+        # Classifier head
         self.classifier = nn.Sequential(
             nn.Flatten(),
             nn.Linear(256 * 4 * 4, 512),
@@ -34,4 +34,4 @@ class BasicCNN(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.classifier(x)
-        return x  # ✅ 必须有 return，且不能在 __init__ 中写 return
+        return x  # OK Must return here; do not return inside __init__

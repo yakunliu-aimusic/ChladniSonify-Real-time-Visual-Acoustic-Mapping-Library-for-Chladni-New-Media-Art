@@ -3,7 +3,7 @@ import random
 import shutil
 from pathlib import Path
 
-# ================== 配置 ==================
+# ================== Configuration ==================
 PROJECT_ROOT = Path(__file__).parent.parent
 GENERATED_ROOT = PROJECT_ROOT / "data" / "generated"
 LABEL_PATH = GENERATED_ROOT / "labels" / "merged_all_labels.json"
@@ -21,16 +21,16 @@ SPLIT_RATIO = (0.8, 0.1, 0.1)  # train, val, test_synthetic
 
 random.seed(RANDOM_SEED)
 
-# Step 1: 加载标签
+# Step 1: Load labels
 with open(LABEL_PATH, "r") as f:
     all_labels = json.load(f)
-print(f"✅ Loaded {len(all_labels)} samples from {LABEL_PATH}")
+print(f"OK Loaded {len(all_labels)} samples from {LABEL_PATH}")
 
-# Step 2: 构建 filename → full path 映射
+# Step 2: Build filename to full path mapping
 file_to_path = {}
 for img_dir in IMG_DIRS:
     if not img_dir.exists():
-        print(f"⚠️ Warning: {img_dir} does not exist!")
+        print(f"WARNING: {img_dir} does not exist!")
         continue
     for img_path in img_dir.glob("*.png"):
         filename = img_path.name
@@ -39,23 +39,23 @@ for img_dir in IMG_DIRS:
 
 missing_labels = set(all_labels.keys()) - set(file_to_path.keys())
 if missing_labels:
-    print(f"❌ {len(missing_labels)} labeled files not found! Examples:")
+    print(f"ERROR: {len(missing_labels)} labeled files not found! Examples:")
     for f in list(missing_labels)[:3]:
         print(f"  {f}")
     raise RuntimeError("Image-label mismatch!")
 
-print(f"✅ All {len(file_to_path)} images found.")
+print(f"OK All {len(file_to_path)} images found.")
 
-# === 新增：打印类别分布（可选，用于 sanity check）===
+# === Optional: print class distribution for sanity check===
 class_counts = {}
 for meta in all_labels.values():
     mid = meta["modal_idx"]
     class_counts[mid] = class_counts.get(mid, 0) + 1
-print(f"\n📊 Class distribution:")
+print(f"\nClass distribution:")
 for mid in sorted(class_counts):
     print(f"  Class {mid}: {class_counts[mid]} images")
 
-# Step 3: 随机划分所有图像（image-level split）
+# Step 3: Random image-level split
 all_filenames = list(all_labels.keys())
 random.shuffle(all_filenames)
 
@@ -72,7 +72,7 @@ print(f"  Train: {len(train_files)} images")
 print(f"  Val:   {len(val_files)} images")
 print(f"  Test (synthetic): {len(test_synth_files)} images")
 
-# Step 4: 保存子集标签
+# Step 4: Save subset labels
 (OUTPUT_ROOT / "labels").mkdir(parents=True, exist_ok=True)
 
 def save_subset(files, out_path):
@@ -84,7 +84,7 @@ save_subset(train_files, OUTPUT_ROOT / "labels" / "train.json")
 save_subset(val_files, OUTPUT_ROOT / "labels" / "val.json")
 save_subset(test_synth_files, OUTPUT_ROOT / "labels" / "test_synthetic.json")
 
-# Step 5: 复制图像
+# Step 5: Copy images
 for split_name, files in [("train", train_files), ("val", val_files), ("test_synthetic", test_synth_files)]:
     dst_dir = OUTPUT_ROOT / "images" / split_name
     dst_dir.mkdir(parents=True, exist_ok=True)
@@ -94,7 +94,7 @@ for split_name, files in [("train", train_files), ("val", val_files), ("test_syn
         dst = dst_dir / fname
         shutil.copy2(src, dst)
 
-print(f"\n🎉 Success! Final structure:")
+print(f"\nSuccess! Final structure:")
 print(f"{OUTPUT_ROOT}/")
 print(f"├── images/")
 print(f"│   ├── train/")
