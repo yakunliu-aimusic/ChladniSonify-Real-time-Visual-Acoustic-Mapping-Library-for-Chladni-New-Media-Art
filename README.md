@@ -1,42 +1,32 @@
 # ChladniSonify: Real-Time Visual-Acoustic Mapping Library for Chladni New Media Art
 
-ChladniSonify is an academic research codebase for generating Chladni-pattern datasets, training visual recognition models, evaluating inference performance, and supporting real-time visual-acoustic mapping experiments. The repository focuses on the model-training pipeline and the visual-acoustic mapping algorithm source code associated with Chladni-pattern sonification.
+ChladniSonify is the dataset, model-training, and Python algorithm repository for the paper **"ChladniSonify: A Visual-Acoustic Mapping Method for Chladni Patterns in New Media Art Creation"**. It supports reproducible Chladni pattern generation, augmentation, model training, model comparison, and inference evaluation for physically grounded visual-acoustic mapping.
 
-> Project status: research prototype and reproducibility package.
+## Scope and Paper Alignment
 
-## Project Scope and Research Attribution
+The paper describes a full system with three layers:
 
-This repository contains the source code and data-processing pipeline for:
+1. physically consistent Chladni pattern dataset construction;
+2. lightweight CNN-CBAM pattern mode recognition;
+3. Python-JUCE real-time visual-acoustic mapping and audio rendering.
+
+This repository implements layers 1 and 2, plus a lightweight Python mapping-server prototype. It contains:
 
 - formula-driven Chladni pattern generation;
-- data augmentation for visual recognition experiments;
-- CNN, AlexNet, VGG16, and CBAM-enhanced CNN model training;
-- model evaluation, accuracy reporting, and inference-latency measurement;
-- lightweight socket-based mapping support for real-time visual-acoustic experiments.
+- augmentation scripts for noise, color variation, sand-distribution disturbance, matrix filtering, and geometric transforms;
+- JSON label generation, merging, and dataset splitting;
+- Basic CNN, AlexNet, VGG16, CBAM-CNN 5x5, and CBAM-related comparison experiments;
+- evaluation scripts for accuracy, F1-score, classification reports, and inference latency.
 
-This repository does **not** claim ownership of the accompanying interactive hardware installation or the VST3 visual-acoustic mapping plugin as part of the same paper. Those components belong to a separate research output and should be cited, linked, and described independently.
+The JUCE/VST3 plugin, shared-memory video transfer, UDP return pipeline, real-time audio oscillator rendering, compiled plugin artifacts, and interactive hardware installation belong to the companion project rather than this repository.
 
-### Related Repositories
+## Related Repositories and Archives
 
-The following placeholders are reserved for cross-referencing the two associated research projects:
-
-- Model training and visual-acoustic mapping algorithm source code: `TODO: add repository URL for this project`
-- Interactive hardware installation and VST3 visual-acoustic mapping plugin: `TODO: add repository URL for the companion project`
-
-When both repositories are publicly available, please add reciprocal links in both README files.
-
-## Paper and Dataset
-
-- arXiv paper: [https://arxiv.org/abs/2605.09846](https://arxiv.org/abs/2605.09846)
-- Zenodo dataset/software record: [https://zenodo.org/records/21730609](https://zenodo.org/records/21730609)
+- Dataset and model repository: [https://github.com/yakunliu-aimusic/ChladniSonify-Real-time-Visual-Acoustic-Mapping-Library-for-Chladni-New-Media-Art](https://github.com/yakunliu-aimusic/ChladniSonify-Real-time-Visual-Acoustic-Mapping-Library-for-Chladni-New-Media-Art)
+- Audio-visual mapping plugin repository: [https://github.com/yakunliu-aimusic/VisionAudioMapping](https://github.com/yakunliu-aimusic/VisionAudioMapping)
+- Zenodo archive for weights and artifacts: [https://zenodo.org/records/21730609](https://zenodo.org/records/21730609)
 - DOI: [10.5281/zenodo.21730609](https://doi.org/10.5281/zenodo.21730609)
-- License of the Zenodo record: Creative Commons Attribution 4.0 International, as stated on the Zenodo page.
-
-## Abstract
-
-Existing visual-audio mapping schemes for new media art often depend on subjective mapping rules, costly physical simulation, or insufficient real-time performance. This project provides a research pipeline for Chladni-pattern sonification based on thin-plate vibration theory, image-frequency dataset generation, and deep-learning-based visual recognition.
-
-Guided by Kirchhoff-Love thin-plate vibration theory, paired Chladni image-frequency samples are generated and augmented for model training. Multiple neural-network variants are included for comparative experiments, including baseline CNN, AlexNet, VGG16, and CBAM-enhanced CNN architectures. The resulting recognition model can be used as the visual front end of a real-time visual-acoustic mapping system.
+- arXiv paper: [https://arxiv.org/abs/2605.09846](https://arxiv.org/abs/2605.09846)
 
 ## Visual Overview
 
@@ -44,50 +34,136 @@ Guided by Kirchhoff-Love thin-plate vibration theory, paired Chladni image-frequ
 
 ![Modeled and generated Chladni patterns](./gen_chladni.jpg)
 
-Formula-driven Chladni vibration samples generated from thin-plate physical equations.
-
 ### Data Augmentation Samples
 
 ![Augmented Chladni patterns](./aug_chladni.jpg)
-
-Augmented samples produced through color perturbation, image noise, local matrix filtering, and geometric transformations.
 
 ### Mapping Workflow
 
 ![Mapping mechanism workflow](./mapping_flow.jpg)
 
-End-to-end workflow of the proposed visual-acoustic mapping pipeline.
+The workflow figure refers to the full paper system. The complete JUCE/VST3 implementation is maintained in the companion plugin repository.
+
+## Method Summary
+
+### Physical Modeling and Dataset Construction
+
+The generation scripts implement a physically informed approximation of Chladni nodal topology for a square stainless-steel plate with center excitation and four free edges. Default parameters follow the paper setting:
+
+- plate side length: `0.16 m`;
+- plate thickness: `0.0008 m`;
+- Young's modulus: `200e9 Pa`;
+- Poisson's ratio: `0.3`;
+- density: `7850 kg/m^3`;
+- image size: `224 x 224` RGB.
+
+The scripts compute plate bending stiffness and map modal orders to calibrated benchmark frequencies through a modal coefficient table. The rendering pipeline includes antisymmetric modal combinations, center attenuation, edge damping, adaptive nodal-region thresholding, stochastic sand-particle placement, and textured metallic backgrounds.
+
+### Data Augmentation
+
+The paper describes multi-dimensional augmentation to reduce overfitting to ideal synthetic data. The repository implements this through:
+
+- `clean.py`: clean formula-driven images;
+- `noise .py`: Gaussian noise, occlusion, blur, sand-distribution variation, and geometric transforms;
+- `random_color.py`: full-gamut plate/sand color randomization with contrast constraints;
+- `random_matrix filter  .py`: local CNN-style matrix filters for texture variation.
+
+All augmentation operations preserve the modal and frequency labels.
+
+### Data Preprocessing Pipeline
+
+The preprocessing pipeline is consistent with the paper and is implemented in the training/evaluation scripts:
+
+1. convert each image to RGB;
+2. resize to `224 x 224`;
+3. convert pixel values to floating-point tensors;
+4. normalize channels with mean `(0.485, 0.456, 0.406)` and standard deviation `(0.229, 0.224, 0.225)`;
+5. map each physical modal order to a discrete class index from `0` to `14`;
+6. keep modal, frequency, and augmentation metadata in JSON labels where available.
+
+Implemented transform:
+
+```python
+transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+])
+```
+
+The paper describes 15-dimensional one-hot labels at the dataset-construction level. The PyTorch implementation returns integer `modal_idx` targets, which is the expected target format for `torch.nn.CrossEntropyLoss`.
+
+### Model Architecture
+
+The repository contains the model families discussed in the paper:
+
+- `kladni_model_classification /`: baseline CNN;
+- `kladni_model_alex/`: AlexNet comparison;
+- `kladni_model_vgg 3.0/`: VGG16 comparison;
+- `kladni_cbam 5x5/`: paper-oriented CBAM-CNN with 5x5 spatial attention;
+- `kladni_cbam 7x7/`: CBAM comparison module.
+
+The `kladni_cbam 5x5` model follows the paper's core design: convolutional feature extraction, CBAM channel-spatial attention, adaptive average pooling to `4 x 4`, and a classifier head producing 15 modal logits.
+
+## Assessment Metrics
+
+The paper's Assessment Metrics section belongs logically before the experiment results because it defines the evaluation criteria used throughout the experiments. This repository now documents it here, before the running guide.
+
+### Top-1 Classification Accuracy
+
+Top-1 accuracy measures whether the predicted modal class exactly matches the ground-truth modal class. In Chladni visual-acoustic mapping, this is the primary correctness metric because any modal error maps to an incorrect benchmark frequency.
+
+Code implementation:
+
+```python
+acc = np.mean(all_preds == all_labels)
+```
+
+### Macro F1-Score
+
+Macro F1-score averages per-class F1 values across all modal classes. It checks whether the model performs consistently across both simple low-frequency patterns and more complex high-frequency patterns.
+
+Code implementation:
+
+```python
+macro_f1 = f1_score(all_labels, all_preds, average='macro')
+```
+
+### Micro F1-Score
+
+Micro F1-score is reported as an auxiliary metric. For single-label multi-class classification, it is usually close to overall accuracy, but it is useful as a sanity check.
+
+Code implementation:
+
+```python
+micro_f1 = f1_score(all_labels, all_preds, average='micro')
+```
+
+### Classification Report
+
+The evaluation scripts print per-class precision, recall, and F1-score through `sklearn.metrics.classification_report`, enabling class-level error inspection.
+
+### Single-Image Inference Latency
+
+The paper uses single-image inference latency to verify real-time deployability. The current scripts benchmark pure model inference with a synthetic tensor of shape `1 x 3 x 224 x 224` and report milliseconds per image and throughput. The current implementation averages 100 runs; change the benchmark loop to 1000 runs for exact paper-protocol reproduction.
+
+### End-to-End Latency
+
+The full-link latency reported in the paper includes camera/video acquisition, shared-memory transfer, Python inference, UDP return, JUCE parsing, and audio rendering. That benchmark belongs to the companion JUCE/VST3 repository and is not fully reproduced by this Python-only repository.
 
 ## Repository Structure
-
-The repository contains several parallel experiment folders. Each folder follows a similar internal layout but targets a different model architecture or CBAM configuration.
 
 ```text
 .
 ├── kladni_model_classification /
 │   ├── data/
-│   │   ├── raw/                 # Chladni pattern generation and augmentation scripts
-│   │   ├── generated/           # Generated images and labels before splitting
-│   │   └── processed/           # Train/validation/test datasets
-│   ├── model/                   # Basic CNN model, training, and evaluation scripts
-│   ├── scripts/                 # Dataset split utilities
-│   └── chladni_server.py        # Socket-based inference/mapping server prototype
+│   ├── model/
+│   ├── scripts/
+│   └── chladni_server.py
 ├── kladni_model_alex/
-│   ├── data/
-│   ├── model/                   # AlexNet-based experiment
-│   └── scripts/
 ├── kladni_model_vgg 3.0/
-│   ├── data/
-│   ├── model/                   # VGG16-based experiment
-│   └── scripts/
 ├── kladni_cbam 5x5/
-│   ├── data/
-│   ├── model/                   # CBAM-CNN experiment with 5x5 configuration
-│   └── scripts/
 ├── kladni_cbam 7x7/
-│   ├── data/
-│   ├── model/                   # CBAM-CNN experiment with 7x7 configuration
-│   └── scripts/
 ├── gen_chladni.jpg
 ├── aug_chladni.jpg
 ├── mapping_flow.jpg
@@ -95,19 +171,13 @@ The repository contains several parallel experiment folders. Each folder follows
 └── README.md
 ```
 
+Each experiment folder generally contains `data/raw`, `data/generated`, `data/processed`, `model`, and `scripts` subdirectories.
+
 ## Environment Configuration
 
-### Python Version
+Recommended Python version: Python 3.9.
 
-Recommended Python version:
-
-- Python 3.9
-
-The repository contains compiled cache files generated under Python 3.9, and the codebase is written for the PyTorch/torchvision ecosystem commonly used with Python 3.9. Python 3.8-3.11 may also work if compatible versions of PyTorch, torchvision, SciPy, scikit-learn, Pillow, NumPy, and Matplotlib are installed.
-
-### Core Dependencies
-
-The project does not currently include a pinned `requirements.txt`. Install the following third-party libraries according to your operating system and hardware acceleration environment:
+Core dependencies:
 
 - `numpy`
 - `scipy`
@@ -117,9 +187,7 @@ The project does not currently include a pinned `requirements.txt`. Install the 
 - `torch`
 - `torchvision`
 
-For CPU-only use, install PyTorch from the official PyTorch instructions. For CUDA or Apple Silicon acceleration, select the PyTorch build that matches your hardware and driver/runtime environment.
-
-### Suggested Setup
+Suggested setup:
 
 ```bash
 python3.9 -m venv .venv
@@ -128,7 +196,7 @@ python -m pip install --upgrade pip
 python -m pip install numpy scipy matplotlib pillow scikit-learn torch torchvision
 ```
 
-On Windows, activate the environment with:
+On Windows:
 
 ```bash
 .venv\Scripts\activate
@@ -136,52 +204,37 @@ On Windows, activate the environment with:
 
 ## Data Preparation and Running Guide
 
-Each experiment folder can be operated independently. The examples below use `kladni_cbam 5x5` as the reference module. Replace the folder name with another experiment directory when running the AlexNet, VGG16, baseline CNN, or CBAM 7x7 variants.
+The examples below use `kladni_cbam 5x5`, which is closest to the paper's optimized CNN-CBAM configuration. Replace the folder name to run another model variant.
 
-### 1. Generate Clean Chladni Samples
+### 1. Generate Clean Samples
 
 ```bash
 python "kladni_cbam 5x5/data/raw/clean.py"
 ```
 
-This script generates formula-driven clean Chladni images and label metadata under:
-
-```text
-kladni_cbam 5x5/data/generated/images/clean/
-kladni_cbam 5x5/data/generated/labels/
-```
-
-### 2. Generate Noisy Augmented Samples
+### 2. Generate Noisy Augmentation
 
 ```bash
 python "kladni_cbam 5x5/data/raw/noise .py"
 ```
 
-This script generates noisy samples with Gaussian noise, occlusion, blur, sand-distribution variation, and geometric transformations.
-
-### 3. Generate Full-Gamut Color Augmentation Samples
+### 3. Generate Color Augmentation
 
 ```bash
 python "kladni_cbam 5x5/data/raw/random_color.py"
 ```
 
-This script generates images with randomized metal-plate and sand colors while preserving contrast constraints.
-
-### 4. Generate Local Matrix Filter Augmentation Samples
+### 4. Generate Matrix-Filter Augmentation
 
 ```bash
 python "kladni_cbam 5x5/data/raw/random_matrix filter  .py"
 ```
 
-This script applies local CNN-style matrix filters to simulate image-processing variation and texture changes.
-
-### 5. Merge Generated Labels
+### 5. Merge Labels
 
 ```bash
 python "kladni_cbam 5x5/data/generated/combine_labels.py"
 ```
-
-This script merges label JSON files from the generated dataset into a unified label file.
 
 ### 6. Split Dataset
 
@@ -189,44 +242,32 @@ This script merges label JSON files from the generated dataset into a unified la
 python "kladni_cbam 5x5/scripts/split_dataset.py"
 ```
 
-This script creates training, validation, and synthetic test splits under:
+Current code uses an image-level split ratio of `0.8/0.1/0.1` for train, validation, and synthetic test. The paper summarizes an `8:2` train/test split for the expanded dataset. Adjust `SPLIT_RATIO` if exact paper reproduction is required.
 
-```text
-kladni_cbam 5x5/data/processed/images/
-kladni_cbam 5x5/data/processed/labels/
-```
-
-### 7. Train a Model
-
-Run the training script inside the target experiment folder:
+### 7. Train Model
 
 ```bash
 python "kladni_cbam 5x5/model/train.py"
 ```
 
-The best model weights are saved to:
+Outputs:
 
 ```text
 kladni_cbam 5x5/model/best_model.pth
-```
-
-A training curve is saved to:
-
-```text
 kladni_cbam 5x5/plots/training_curve.png
 ```
 
-### 8. Evaluate a Model
+The current `kladni_cbam 5x5` script uses batch size `32`, `20` epochs, Adam, and learning rate `8e-4`. The paper reports batch size `32`, Adam, learning rate `1e-4`, `50` epochs, and early stopping after 10 epochs without validation-loss improvement. Modify the script if strict reproduction is needed.
+
+### 8. Evaluate Model
 
 ```bash
 python "kladni_cbam 5x5/model/evaluate.py"
 ```
 
-The evaluation script reports classification accuracy, F1 scores, per-class metrics, and inference-speed measurements.
+The script reports inference speed, Top-1 accuracy, macro F1, micro F1, and per-class precision/recall/F1.
 
-### 9. Run the Socket-Based Mapping Server Prototype
-
-The baseline classification folder includes a socket server prototype:
+### 9. Run Python Mapping Server Prototype
 
 ```bash
 python "kladni_model_classification /chladni_server.py"
@@ -234,44 +275,23 @@ python "kladni_model_classification /chladni_server.py"
 
 Default ports:
 
-- image input port: `9999`
-- frequency response port: `9998`
+- image input: `9999`;
+- frequency response: `9998`.
 
-Before using the server, ensure that the referenced model class and model weights are available and that `MODEL_PATH` points to the correct checkpoint.
+This is a Python socket prototype, not the final shared-memory and UDP JUCE/VST3 system described in the paper.
 
-## Module Summary
+## Implementation Notes for Strict Paper Reproduction
 
-### `kladni_model_classification /`
+The codebase is consistent with the paper's core algorithmic direction, but several implementation parameters should be checked before exact reproduction:
 
-Baseline CNN classification experiment. It also contains `chladni_server.py`, a minimal socket-based prototype for receiving image frames and returning predicted frequency labels.
-
-### `kladni_model_alex/`
-
-AlexNet-based comparison experiment for Chladni-pattern classification.
-
-### `kladni_model_vgg 3.0/`
-
-VGG16-based comparison experiment, including training and evaluation scripts with hardware-aware performance notes.
-
-### `kladni_cbam 5x5/`
-
-CBAM-enhanced CNN experiment using a 5x5-related configuration for attention and convolutional feature extraction.
-
-### `kladni_cbam 7x7/`
-
-CBAM-enhanced CNN experiment using a 7x7-related configuration for comparative attention-kernel analysis.
-
-## Reproducibility Notes
-
-- Random seeds are set in the generation scripts where applicable.
-- Generated labels are stored as JSON files.
-- Model checkpoints are saved as PyTorch `.pth` files.
-- Some folders contain generated datasets, plots, and model artifacts. If reproducing experiments from scratch, regenerate datasets before training.
-- Directory names contain spaces in several places. Always quote paths when running commands from a shell.
+- `evaluate.py` uses 100 pure-inference timing runs; the paper describes 1000 runs.
+- `kladni_cbam 5x5/model/train.py` uses 20 epochs and learning rate `8e-4`; the paper reports 50 epochs and learning rate `1e-4` with early stopping.
+- `split_dataset.py` uses `0.8/0.1/0.1`; the paper summarizes an `8:2` train/test split.
+- The full JUCE/VST3 shared-memory and UDP audio-rendering pipeline is maintained in the companion repository.
 
 ## Citation
 
-If you use this repository, the dataset, or the associated research results, please cite the corresponding paper and Zenodo record.
+If you use this repository, dataset, or model artifacts, cite the paper and Zenodo archive.
 
 ```bibtex
 @misc{chladnisonify_zenodo_2026,
@@ -284,12 +304,6 @@ If you use this repository, the dataset, or the associated research results, ple
 }
 ```
 
-Please replace or supplement this BibTeX entry with the formal paper citation once the final bibliographic information is available.
-
 ## License
 
-See `LICENSE` for the repository license. The Zenodo record states that the released dataset package is available under the Creative Commons Attribution 4.0 International license.
-
-## Academic Use and Contact
-
-This repository is intended for academic research, reproducibility, and non-commercial experimentation in Chladni-pattern recognition and visual-acoustic mapping. For questions, corrections, or citation updates, please open an issue or contact the project maintainer through the associated repository page once the public URL is added.
+See `LICENSE` for the repository license. The Zenodo record states that the archived dataset package is released under Creative Commons Attribution 4.0 International.
